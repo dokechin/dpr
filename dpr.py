@@ -1,59 +1,73 @@
 import openpyxl
+from openpyxl import load_workbook
 import time
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
+import re
 
-#googleで検索する文字
-search_string = '決算説明資料　filetype:pdf'
+pattern = '内国株式'
 
-#Seleniumを使うための設定とgoogleの画面への遷移
-INTERVAL = 2.5
-URL = "https://www.google.com/"
-driver_path = "./chromedriver"
-driver = webdriver.Chrome(executable_path=driver_path)
-driver.maximize_window()
-time.sleep(INTERVAL)
-driver.get(URL)
-time.sleep(INTERVAL)
+wb = load_workbook(filename = 'data_j.xlsx')
+ws = wb["Sheet1"]
+rg = ws["C2:" + "D" + str(ws.max_row)]
+for row in rg:
+    if re.search(pattern, row[1].value):
+        print(row[1].value)
+        print(row[0].value)
 
-#文字を入力して検索
-driver.find_element_by_name('q').send_keys(search_string)
-driver.find_elements_by_name('btnK')[1].click() #btnKが2つあるので、その内の後の方
-time.sleep(INTERVAL)
+        #googleで検索する文字
+        search_string = row[0].value + ' 決算説明資料 filetype:pdf'
 
-#検索結果の一覧を取得する
-results = []
-flag = False
-while True:
-    g_ary = driver.find_elements_by_class_name('yuRUbf')
-    for g in g_ary:
-        result = {}
-        result['url'] = g.find_element_by_tag_name('a').get_attribute('href')
-        result['title'] = g.find_element_by_tag_name('h3').text
-        print(result)
-        results.append(result)
-        if len(results) >= 150: #抽出する件数を指定
-            flag = True
-            break
-    if flag:
-        break
-    try:
-        driver.find_element_by_id('pnnext').click()
+        #Seleniumを使うための設定とgoogleの画面への遷移
+        INTERVAL = 2.5
+        URL = "https://www.google.com/"
+        driver_path = "./chromedriver"
+        driver = webdriver.Chrome(executable_path=driver_path)
+        driver.maximize_window()
         time.sleep(INTERVAL)
-    except NoSuchElementException:
-        flag = True
-        break
+        driver.get(URL)
+        time.sleep(INTERVAL)
 
-#ワークブックの作成とヘッダ入力
-workbook = openpyxl.Workbook()
-sheet = workbook.active
-sheet['A1'].value = 'タイトル'
-sheet['B1'].value = 'URL'
+        #文字を入力して検索
+        driver.find_element_by_name('q').send_keys(search_string)
+        driver.find_elements_by_name('btnK')[1].click() #btnKが2つあるので、その内の後の方
+        time.sleep(INTERVAL)
 
-#シートにタイトルとURLの書き込み
-for row, result in enumerate(results, 2):
-    sheet[f"A{row}"] = result['title']
-    sheet[f"B{row}"] = result['url']
+        #検索結果の一覧を取得する
+        results = []
+        flag = False
+        while True:
+            g_ary = driver.find_elements_by_class_name('yuRUbf')
+            for g in g_ary:
+                result = {}
+                result['url'] = g.find_element_by_tag_name('a').get_attribute('href')
+                result['title'] = g.find_element_by_tag_name('h3').text
+                print(result)
+                results.append(result)
+                if len(results) >= 10: #抽出する件数を指定
+                    flag = True
+                    break
+            if flag:
+                break
+            try:
+                driver.find_element_by_id('pnnext').click()
+                time.sleep(INTERVAL)
+            except NoSuchElementException:
+                flag = True
+                break
 
-workbook.save(f"google_search_{search_string}.csv")
-driver.close()
+        #ワークブックの作成とヘッダ入力
+        workbook = openpyxl.Workbook()
+        sheet = workbook.active
+        sheet['A1'].value = 'タイトル'
+        sheet['B1'].value = 'URL'
+
+        #シートにタイトルとURLの書き込み
+        for row, result in enumerate(results, 2):
+            sheet[f"A{row}"] = result['title']
+            sheet[f"B{row}"] = result['url']
+
+        workbook.save(f"google_search_{search_string}.csv")
+        driver.close()
+
+
