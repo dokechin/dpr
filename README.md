@@ -1,8 +1,14 @@
 # dpr
 目標配当性向を収集するクローラー
 
-# pip install selenium
-# pip install openpyxl
+pip install selenium
+pip install openpyxl
 
-download selenium webdriver in this project directory
+クロームドライバーをダウンロード
 [https://chromedriver.chromium.org/downloads]
+
+上場企業一覧をダウンロード
+[https://www.jpx.co.jp/markets/statistics-equities/misc/01.html]
+
+
+
