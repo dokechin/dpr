@@ -53,6 +53,8 @@ for file in files:
             except ValueError:
                 div_now = 0
         
+        if div_now == 0:
+            continue
         sheet[f"A{row}"] = rows[0]
         sheet[f"B{row}"] = rows[1]
         sheet[f"C{row}"] = div
