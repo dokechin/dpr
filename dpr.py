@@ -36,10 +36,12 @@ for file in files:
     text = file_data["content"]
     if text is None :
         continue
-    matchObj = re.search(r'配当性向.*([¥d|¥.]*)[％|%]', text)
+    matchObj = re.search(r'配当性向.*?(\d+\.?\d*)[\%|％]', text)
     if matchObj:
         div = 0
         div_now = 0;
+        print(matchObj.group())
+        print(matchObj.group(1))
         if matchObj.group(1) is not None :
             try:
                 div = float(matchObj.group(1))  # 文字列を実際にfloat関数で変換してみる
