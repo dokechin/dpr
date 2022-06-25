@@ -17,5 +17,6 @@ pip install tika
 
 
 実行方法
+mkdir pdf
 python download.py [途中から再実行する場合には証券コードを引数に]
 python dpr.py
