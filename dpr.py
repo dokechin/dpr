@@ -52,11 +52,12 @@ for file in files:
                 div_now = float(dividend[rows[0]])  # 文字列を実際にfloat関数で変換してみる
             except ValueError:
                 div_now = 0
+        
         sheet[f"A{row}"] = rows[0]
         sheet[f"B{row}"] = rows[1]
         sheet[f"C{row}"] = div
         sheet[f"D{row}"] = div_now
-        sheet[f"E{row}"] = div - div_now
+        sheet[f"E{row}"] =  '' if div_now == 0 else div / div_now
         sheet[f"F{row}"] = matchObj.group()
 
         row+=1
