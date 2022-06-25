@@ -1,73 +1,63 @@
 import openpyxl
 from openpyxl import load_workbook
-import time
-from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
 import re
+import glob
+from tika import parser
+import os
 
-pattern = '内国株式'
+import csv
 
-wb = load_workbook(filename = 'data_j.xlsx')
-ws = wb["Sheet1"]
-rg = ws["C2:" + "D" + str(ws.max_row)]
-for row in rg:
-    if re.search(pattern, row[1].value):
-        print(row[1].value)
-        print(row[0].value)
+filename="fy-stock-dividend.csv"
 
-        #googleで検索する文字
-        search_string = row[0].value + ' 決算説明資料 filetype:pdf'
+dividend = {}
+with open(filename,newline="") as csvf:
+    data=csv.reader(csvf)
+    for i, raw in enumerate(data):
+        if i <= 1 : 
+            continue
+        dividend[raw[0]] = raw[5]
 
-        #Seleniumを使うための設定とgoogleの画面への遷移
-        INTERVAL = 2.5
-        URL = "https://www.google.com/"
-        driver_path = "./chromedriver"
-        driver = webdriver.Chrome(executable_path=driver_path)
-        driver.maximize_window()
-        time.sleep(INTERVAL)
-        driver.get(URL)
-        time.sleep(INTERVAL)
+workbook = openpyxl.Workbook()
+sheet = workbook.active
+sheet['A1'].value = '銘柄コード'
+sheet['B1'].value = '銘柄名'
+sheet['C1'].value = '目標配当性向'
+sheet['D1'].value = '配当性向'
+sheet['E1'].value = '配当性向差分'
+sheet['F1'].value = '抽出結果'
 
-        #文字を入力して検索
-        driver.find_element_by_name('q').send_keys(search_string)
-        driver.find_elements_by_name('btnK')[1].click() #btnKが2つあるので、その内の後の方
-        time.sleep(INTERVAL)
-
-        #検索結果の一覧を取得する
-        results = []
-        flag = False
-        while True:
-            g_ary = driver.find_elements_by_class_name('yuRUbf')
-            for g in g_ary:
-                result = {}
-                result['url'] = g.find_element_by_tag_name('a').get_attribute('href')
-                result['title'] = g.find_element_by_tag_name('h3').text
-                print(result)
-                results.append(result)
-                if len(results) >= 10: #抽出する件数を指定
-                    flag = True
-                    break
-            if flag:
-                break
+row = 1
+files = glob.glob("./pdf/*.pdf")
+for file in files:
+    print (file)
+    filename = os.path.splitext(os.path.basename(file))[0]
+    rows = filename.split("_")
+    file_data = parser.from_file(file)
+    text = file_data["content"]
+    if text is None :
+        continue
+    matchObj = re.search(r'配当性向.*([¥d|¥.])*[％|%]', text)
+    if matchObj:
+        div = 0
+        div_now = 0;
+        if matchObj.group(1) is not None :
             try:
-                driver.find_element_by_id('pnnext').click()
-                time.sleep(INTERVAL)
-            except NoSuchElementException:
-                flag = True
-                break
+                div = float(matchObj.group(1))  # 文字列を実際にfloat関数で変換してみる
+            except ValueError:
+                div = 0
+        if rows[0] in dividend and dividend[rows[0]] is not None :
+            try:
+                div_now = float(dividend[rows[0]])  # 文字列を実際にfloat関数で変換してみる
+            except ValueError:
+                div_now = 0
+        sheet[f"A{row}"] = rows[0]
+        sheet[f"B{row}"] = rows[1]
+        sheet[f"C{row}"] = div
+        sheet[f"D{row}"] = div_now
+        sheet[f"E{row}"] = div - div_now
+        sheet[f"F{row}"] = matchObj.group()
 
-        #ワークブックの作成とヘッダ入力
-        workbook = openpyxl.Workbook()
-        sheet = workbook.active
-        sheet['A1'].value = 'タイトル'
-        sheet['B1'].value = 'URL'
-
-        #シートにタイトルとURLの書き込み
-        for row, result in enumerate(results, 2):
-            sheet[f"A{row}"] = result['title']
-            sheet[f"B{row}"] = result['url']
-
-        workbook.save(f"google_search_{search_string}.csv")
-        driver.close()
+        row+=1
+workbook.save("result.xlsx")
 
 
