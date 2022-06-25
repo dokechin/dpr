@@ -36,7 +36,7 @@ for file in files:
     text = file_data["content"]
     if text is None :
         continue
-    matchObj = re.search(r'配当性向.*([¥d|¥.])*[％|%]', text)
+    matchObj = re.search(r'配当性向.*([¥d|¥.]*)[％|%]', text)
     if matchObj:
         div = 0
         div_now = 0;
