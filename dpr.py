@@ -36,6 +36,10 @@ for file in files:
     text = file_data["content"]
     if text is None :
         continue
+    match = re.search(rows[0], text)
+    if match is None:
+        print (rows[0] + " is invalid data")
+        continue
     matchObj = re.search(r'配当性向.*?(\d+\.?\d*)[\%|％]', text)
     if matchObj:
         div = 0
